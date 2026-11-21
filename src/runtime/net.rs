@@ -5,7 +5,7 @@ use std::{
     sync::Arc,
     task::{Context, Poll}
 };
-use mio::{Interest, Registry, Token, event::Source, net::TcpStream};
+use mio::{Interest, Registry, Token, net::TcpStream};
 use rustls::{ServerConfig, ServerConnection};
 use crate::runtime::Reactor;
 

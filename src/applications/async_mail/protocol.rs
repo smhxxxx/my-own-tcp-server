@@ -68,31 +68,25 @@ impl AsyncProtocol for Smtp {
                     }
                 }
                 "MAIL" => {
-                    if let Some(sender) = line_iter.next() {
-                        let cleaned = sender
-                            .trim_start_matches("FROM:")
-                            .trim_start_matches("from:")
-                            .trim_matches(&['<', '>', '\r', '\n'][..])
-                            .to_string();
-
-                        session.from = cleaned;
-                        stream.write_all(b"250 Ok\r\n").await?;
-                    } else {
-                        stream.write_all(b"501 Syntax error\r\n").await?;
+                    match extract_addresses(&line_buf) {
+                        Some(addr) => {
+                            session.from = addr.trim().to_string();
+                            stream.write_all(b"250 Ok\r\n").await?;
+                        }
+                        None => {
+                            stream.write_all(b"501 5.5.4 Syntax error in parameters\r\n").await?;
+                        }
                     }
                 }
                 "RCPT" => {
-                    if let Some(receiver) = line_iter.next() {
-                        let cleaned = receiver
-                            .trim_start_matches("TO:")
-                            .trim_start_matches("to:")
-                            .trim_matches(&['<', '>', '\r', '\n'][..])
-                            .to_string();
-
-                        session.to.push(cleaned);
-                        stream.write_all(b"250 Ok\r\n").await?;
-                    } else {
-                        stream.write_all(b"501 Syntax error\r\n").await?;
+                    match extract_addresses(&line_buf) {
+                        Some(addr) => {
+                            session.to.push(addr.trim().to_string());
+                            stream.write_all(b"250 Ok\r\n").await?;
+                        }
+                        _ => {
+                            stream.write_all(b"501 5.5.4 Syntax error in parameters\r\n").await?;
+                        }
                     }
                 }
                 "DATA" => {
@@ -114,7 +108,8 @@ impl AsyncProtocol for Smtp {
     })}
 }
 
-impl Smtp {
+impl Smtp
+{
     pub fn new(domain:&str,
                post_handle:impl Fn(SmtpSession) -> AsyncConnectionFuture<'static> + Send + Sync + 'static) -> Self
     {
@@ -128,4 +123,11 @@ impl Smtp {
     pub fn set_config(&mut self, config:Arc<ServerConfig>) {
         self.config = Some(config);
     }
+}
+
+fn extract_addresses(line: &str) -> Option<&str>
+{
+    let start = line.find('<')? + 1;
+    let end = line[start..].find('>')? + start;
+    Some(&line[start..end])
 }
