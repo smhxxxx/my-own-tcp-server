@@ -9,9 +9,7 @@ use mio::{Interest, Registry, Token, net::TcpStream};
 use rustls::{ServerConfig, ServerConnection};
 use crate::runtime::Reactor;
 
-
-pub type AsyncConnectionFuture<'a> = Pin<Box<dyn Future<Output = io::Result<usize>> + Send + 'a>>;
-
+pub type AsyncConnectionFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
 pub struct AsyncTcpStream {
     stream: TcpStream,

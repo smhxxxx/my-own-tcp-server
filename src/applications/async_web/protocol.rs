@@ -57,7 +57,9 @@ pub struct Http {
 }
 
 impl AsyncProtocol for Http {
-    fn handle_async_connection(&self, mut stream: AsyncTcpStream) -> AsyncConnectionFuture<'_> {
+    fn handle_async_connection(&self, mut stream: AsyncTcpStream)
+    -> AsyncConnectionFuture<'_, io::Result<usize>>
+    {
         Box::pin(async move {
 
             if self.use_tls {

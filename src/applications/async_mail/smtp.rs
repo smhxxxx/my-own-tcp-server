@@ -1,3 +1,4 @@
+use std::io;
 use std::sync::Arc;
 use rustls::ServerConfig;
 use crate::runtime::net::{AsyncConnectionFuture, AsyncTcpStream};
@@ -38,12 +39,13 @@ impl SmtpSession {
 pub struct Smtp {
     domain: String,
     config: Option<Arc<ServerConfig>>,
-    post_handle: Box<dyn Fn(SmtpSession) -> AsyncConnectionFuture<'static> + Send + Sync>,
+    post_handle: Box<dyn Fn(SmtpSession) -> AsyncConnectionFuture<'static, io::Result<usize>> + Send + Sync>,
 }
 
 impl AsyncProtocol for Smtp {
 
-    fn handle_async_connection(&self, mut stream:AsyncTcpStream) -> AsyncConnectionFuture<'_>
+    fn handle_async_connection(&self, mut stream:AsyncTcpStream)
+    -> AsyncConnectionFuture<'_, io::Result<usize>>
     { Box::pin( async move {
         stream.write_all( format!("220 {} ESMTP ready\r\n", &self.domain).as_bytes() ).await?;
 
@@ -145,7 +147,8 @@ impl AsyncProtocol for Smtp {
 impl Smtp
 {
     pub fn new(domain:&str,
-               post_handle:impl Fn(SmtpSession) -> AsyncConnectionFuture<'static> + Send + Sync + 'static) -> Self
+        post_handle:impl Fn(SmtpSession)-> AsyncConnectionFuture<'static, io::Result<usize>> + Send + Sync + 'static)
+    -> Self
     {
         Self {
             domain: domain.to_string(),

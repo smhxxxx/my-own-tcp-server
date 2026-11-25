@@ -5,7 +5,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 use std::task::Waker;
 use std::thread::JoinHandle;
-use std::thread;
+use std::{io, thread};
 use crate::runtime::net::{AsyncConnectionFuture, AsyncTcpStream};
 use crate::runtime::task::{AsyncTask, Worker};
 
@@ -17,7 +17,7 @@ pub mod task;
 pub(crate) static FIO_POOL: OnceLock<ThreadPool> = OnceLock::new();
 
 pub trait AsyncProtocol: Send + Sync + 'static {
-    fn handle_async_connection(&self, stream: AsyncTcpStream) -> AsyncConnectionFuture<'_>;
+    fn handle_async_connection(&self, stream: AsyncTcpStream) -> AsyncConnectionFuture<'_, io::Result<usize>>;
 }
 
 pub(crate) struct ThreadPool {
