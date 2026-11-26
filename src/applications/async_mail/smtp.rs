@@ -39,8 +39,7 @@ impl SmtpSession {
 pub struct Smtp {
     domain: String,
     config: Option<Arc<ServerConfig>>,
-    post_handle: Box<dyn Fn(&mut SmtpSession)
-        -> AsyncConnectionFuture<'static, io::Result<usize>> + Send + Sync>,
+    post_handle: for<'a> fn(&'a mut SmtpSession) -> AsyncConnectionFuture<'a, io::Result<usize>>
 }
 
 impl AsyncProtocol for Smtp {
@@ -147,15 +146,16 @@ impl AsyncProtocol for Smtp {
 
 impl Smtp
 {
-    pub fn new(domain:&str,
-        post_handle: impl Fn(&mut SmtpSession)
-        -> AsyncConnectionFuture<'static, io::Result<usize>> + Send + Sync + 'static)
+    pub fn new(
+        domain:&str,
+        post_handle: for<'a> fn(&'a mut SmtpSession) -> AsyncConnectionFuture<'a, io::Result<usize>>
+    )
     -> Self
     {
         Self {
             domain: domain.to_string(),
             config: None,
-            post_handle: Box::new(post_handle),
+            post_handle: post_handle
         }
     }
 
