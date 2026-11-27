@@ -14,11 +14,12 @@ use std::sync::Arc;
 pub struct Handler {
     pub method: Method,
     pub endpoint: String,
-    function: Box<HttpFunction>,
+    function: HttpFunction,
 }
 
 impl Handler {
-    pub fn new(method: Method, endpoint: &str, function: Box<HttpFunction>) -> Self {
+    pub fn new(method: Method, endpoint: &str, function: HttpFunction) -> Self
+    {
         Self {
             method,
             endpoint: String::from(endpoint),
@@ -30,8 +31,9 @@ impl Handler {
         &self,
         request: &mut HttpRequest,
         response: &mut HttpResponse,
-    ) -> io::Result<usize> {
-        let result = (*self.function)(request, response).await;
+    ) -> io::Result<usize>
+    {
+        let result = (self.function)(request, response).await;
         match result {
             Ok(n) => Ok(n),
             Err(e) => {
@@ -53,10 +55,11 @@ pub struct Http {
     pre_handlers: HashMap<String, Handler>,
     post_handlers: HashMap<String, Handler>,
     config: Option<Arc<ServerConfig>>,
-    pub use_tls: bool,
+    use_tls: bool,
 }
 
 impl AsyncProtocol for Http {
+
     fn handle_async_connection(&self, mut stream: AsyncTcpStream)
     -> AsyncConnectionFuture<'_, io::Result<usize>>
     {
@@ -156,7 +159,8 @@ impl AsyncProtocol for Http {
 }
 
 impl Http {
-    pub fn new() -> Self {
+    pub fn new() -> Self
+    {
         Self {
             handlers: HashMap::new(),
             pre_handlers: HashMap::new(),
@@ -166,14 +170,23 @@ impl Http {
         }
     }
 
-    pub fn set_config(&mut self, config: Arc<ServerConfig>) {
+    pub fn set_config(mut self, config: Arc<ServerConfig>) -> Self
+    {
         self.config = Some(config);
+        self
+    }
+
+    pub fn with_tls(mut self, use_tls: bool) -> Self
+    {
+        self.use_tls = use_tls;
+        self
     }
 
     async fn parse_request_line(
         stream: &mut AsyncTcpStream,
         params: &mut Value,
-    ) -> io::Result<(Method, String)> {
+    ) -> io::Result<(Method, String)>
+    {
         let mut line: String = String::new();
         stream.read_line(&mut line).await?;
 
@@ -199,7 +212,8 @@ impl Http {
         Ok((method, endpoint.to_string()))
     }
 
-    async fn parse_header(stream: &mut AsyncTcpStream) -> HashMap<String, String> {
+    async fn parse_header(stream: &mut AsyncTcpStream) -> HashMap<String, String>
+    {
         let mut header: HashMap<String, String> = HashMap::new();
         let mut line_buf = String::new();
         loop {
@@ -229,7 +243,8 @@ impl Http {
         stream: &mut AsyncTcpStream,
         content_length: usize,
         content_type: String,
-    ) -> io::Result<Option<Value>> {
+    ) -> io::Result<Option<Value>>
+    {
         let mut body = vec![0; content_length];
         stream.read(&mut body).await?;
         let body_str = String::from_utf8(body).unwrap_or(String::new());
@@ -248,7 +263,8 @@ impl Http {
         }
     }
 
-    fn search_wildcard(&self, method: &Method, endpoint: &str) -> Option<&Handler> {
+    fn search_wildcard(&self, method: &Method, endpoint: &str) -> Option<&Handler>
+    {
         let mut endpoint_vec = endpoint.split('/').collect::<Vec<&str>>();
 
         while !endpoint_vec.is_empty() {
@@ -270,7 +286,8 @@ impl Http {
         endpoint: &str,
         request: &mut HttpRequest,
         response: &mut HttpResponse,
-    ) -> bool {
+    ) -> bool
+    {
         let endpoint_vec = endpoint.split('/').collect::<Vec<&str>>();
         let mut search = String::new();
 
@@ -302,29 +319,39 @@ impl Http {
         true
     }
 
-    pub fn set_handler(&mut self, method: Method, endpoint: &str, function: Box<HttpFunction>) {
+    pub fn set_handler(&mut self, method: Method, endpoint: &str, function: HttpFunction)
+    -> &mut Self
+    {
         self.handlers.insert(
             (method.clone(), endpoint.to_string().clone()),
             Handler::new(method, endpoint, function),
         );
+        self
     }
 
-    pub fn set_pre_handler(&mut self, pattern: &str, function: Box<HttpFunction>) {
+    pub fn set_pre_handler(&mut self, pattern: &str, function: HttpFunction)
+    -> &mut Self
+    {
         self.pre_handlers.insert(
             pattern.to_string().clone(),
             Handler::new(ANY, pattern, function),
         );
+        self
     }
 
-    pub fn set_post_handler(&mut self, pattern: &str, function: Box<HttpFunction>) {
+    pub fn set_post_handler(&mut self, pattern: &str, function: HttpFunction)
+    -> &mut Self
+    {
         self.post_handlers.insert(
             pattern.to_string().clone(),
             Handler::new(ANY, pattern, function),
         );
+        self
     }
 }
 
-fn decode_query(qs: &str, params: &mut Value) {
+fn decode_query(qs: &str, params: &mut Value)
+{
     for (k, v) in form_urlencoded::parse(qs.as_bytes()) {
         if let Some(map) = params.as_object_mut() {
             map.insert(k.to_string(), Value::String(v.to_string()));

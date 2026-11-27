@@ -25,8 +25,7 @@ pub enum Method {
 }
 
 pub type AsyncResult<'a> = Pin<Box<dyn Future<Output = io::Result<usize>> + Send + 'a>>;
-pub type HttpFunction =
-    dyn for<'a> Fn(&'a mut HttpRequest, &'a mut HttpResponse) -> AsyncResult<'a> + Send + Sync;
+pub type HttpFunction = for<'a> fn(&'a mut HttpRequest, &'a mut HttpResponse) -> AsyncResult<'a>;
 
 #[derive(Debug)]
 pub struct HttpRequest {
@@ -47,7 +46,8 @@ impl HttpRequest {
         header: HashMap<String, String>,
         query_params: Value,
         body_params: Value,
-    ) -> Self {
+    ) -> Self
+    {
         Self {
             method,
             endpoint,
@@ -74,7 +74,8 @@ impl HttpResponse {
         status: u16,
         header: HashMap<String, String>,
         accept_gzip: bool,
-    ) -> Self {
+    ) -> Self
+    {
         Self {
             stream,
             status,
@@ -84,26 +85,32 @@ impl HttpResponse {
         }
     }
 
-    pub fn set_status(&mut self, status: u16) -> &mut Self {
+    pub fn set_status(&mut self, status: u16) -> &mut Self
+    {
         self.status = status;
         self
     }
 
-    async fn write_status(&mut self) -> io::Result<usize> {
-        let status_msg = "HTTP/1.1 ".to_string() + self.status.to_string().as_str() + "\r\n";
-        self.stream.write_all(status_msg.as_bytes()).await
-    }
-
-    pub fn add_cookie(&mut self, cookie: &str) {
-        self.set_cookies.push(cookie.to_string());
-    }
-
-    pub fn set_header(&mut self, key: &str, value: &str) -> &mut Self {
+    pub fn set_header(&mut self, key: &str, value: &str) -> &mut Self
+    {
         self.header.insert(key.to_string(), value.to_string());
         self
     }
 
-    async fn write_header(&mut self) -> io::Result<usize> {
+    pub fn add_cookie(&mut self, cookie: &str) -> &mut Self
+    {
+        self.set_cookies.push(cookie.to_string());
+        self
+    }
+
+    async fn write_status(&mut self) -> io::Result<usize>
+    {
+        let status_msg = "HTTP/1.1 ".to_string() + self.status.to_string().as_str() + "\r\n";
+        self.stream.write_all(status_msg.as_bytes()).await
+    }
+
+    async fn write_header(&mut self) -> io::Result<usize>
+    {
         let mut total = 0;
         for (k, v) in &self.header {
             total += self
@@ -121,7 +128,8 @@ impl HttpResponse {
         Ok(total)
     }
 
-    pub async fn write(&mut self, data: &str) -> io::Result<usize> {
+    pub async fn write(&mut self, data: &str) -> io::Result<usize>
+    {
         self.set_header("content-length", data.len().to_string().as_str());
         let mut total = self.write_status().await?;
         total += self.write_header().await?;
@@ -129,11 +137,13 @@ impl HttpResponse {
         Ok(total)
     }
 
-    pub async fn write_bytes(&mut self, data: &[u8]) -> io::Result<usize> {
+    pub async fn write_bytes(&mut self, data: &[u8]) -> io::Result<usize>
+    {
         self.stream.write_all(data).await
     }
 
-    pub async fn write_value(&mut self, value: Value) -> io::Result<usize> {
+    pub async fn write_value(&mut self, value: Value) -> io::Result<usize>
+    {
         let value_str = value.to_string();
         self.set_header("content-length", value_str.len().to_string().as_str());
         let mut total = self.write_status().await?;
@@ -142,7 +152,8 @@ impl HttpResponse {
         Ok(total)
     }
 
-    pub async fn write_file(&mut self, path: &str) -> io::Result<usize> {
+    pub async fn write_file(&mut self, path: &str) -> io::Result<usize>
+    {
         let mut file = AsyncFile::from(File::open(path)?);
         let content_type = Self::get_content_type(path.rsplit('.').next().unwrap());
 
@@ -169,8 +180,10 @@ impl HttpResponse {
         Ok(total)
     }
 
-    fn get_content_type(extension: &str) -> &str {
-        match extension.to_lowercase().as_str() {
+    fn get_content_type(extension: &str) -> &str
+    {
+        match extension.to_lowercase().as_str()
+        {
             "html" => "text/html",
             "js" => "application/javascript",
             "css" => "text/css",

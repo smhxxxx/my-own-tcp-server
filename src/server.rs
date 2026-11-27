@@ -27,8 +27,11 @@ pub struct Server {
     config: Option<Arc<ServerConfig>>,
     read_timeout: Option<Duration>
 }
+
 impl Server {
-    pub fn new() -> Self {
+
+    pub fn new() -> Self
+    {
         Self {
             port_mappings: HashMap::new(),
             reactor: Arc::new(Reactor::new()),
@@ -41,31 +44,42 @@ impl Server {
         }
     }
 
-    pub fn set_port(&mut self, port: u16, protocol: impl AsyncProtocol) {
+    pub fn set_port(mut self, port: u16, protocol: impl AsyncProtocol) -> Self
+    {
         self.port_mappings.insert(port, Arc::new(protocol));
+        self
     }
 
-    pub fn set_max_nio_threads(&mut self, max_nio_threads: usize) {
+    pub fn set_max_nio_threads(mut self, max_nio_threads: usize) -> Self
+    {
         self.max_nio_threads = max_nio_threads;
+        self
     }
 
-    pub fn set_max_fio_threads(&mut self, max_fio_threads: usize) {
+    pub fn set_max_fio_threads(mut self, max_fio_threads: usize) ->Self
+    {
         self.max_fio_threads = max_fio_threads;
+        self
     }
 
-    pub fn set_config(&mut self, config: Arc<ServerConfig>) {
+    pub fn set_config(mut self, config: Arc<ServerConfig>) -> Self
+    {
         self.config = Some(config);
+        self
     }
 
-    pub fn set_read_timeout(&mut self, read_timeout: Option<Duration>) {
+    pub fn set_read_timeout(mut self, read_timeout: Option<Duration>) -> Self
+    {
         self.read_timeout = read_timeout;
+        self
     }
 
     fn next_token(&self) -> Token {
         Token(self.next_token.fetch_add(1, Ordering::Relaxed))
     }
 
-    pub fn listen_port(&self, port: u16, event_registry: Registry) {
+    pub fn listen_port(&self, port: u16, event_registry: Registry)
+    {
         let socket = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), port);
         let listener = std::net::TcpListener::bind(socket).unwrap();
         println!("listening on port {}", port);
@@ -106,7 +120,8 @@ impl Server {
         }
     }
 
-    pub fn start(mut self) {
+    pub fn start(mut self)
+    {
         let mut join_handles: Vec<JoinHandle<()>> = Vec::new();
 
         self.nio_pool.spawn_workers(self.max_nio_threads);
