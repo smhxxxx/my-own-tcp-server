@@ -2,29 +2,37 @@ use std::sync::{Mutex, MutexGuard, OnceLock};
 use crate::applications::async_web::http::{HttpFunction, Method};
 use crate::applications::async_web::protocol::{Http, Phase};
 
-static HTTP_MVC:OnceLock<Mutex<Option<Http>>> = OnceLock::new();
+static HTTP_SETUP:OnceLock<Mutex<Option<Http>>> = OnceLock::new();
 
-fn as_guard() -> MutexGuard<'static, Option<Http>> {
-    HTTP_MVC.get_or_init(|| {
+fn http_as_guard() -> MutexGuard<'static, Option<Http>>
+{
+    HTTP_SETUP.get_or_init(|| {
             Mutex::new(Some(Http::new()))
         })
         .lock().unwrap()
 }
 
-pub fn route(method:Method, path:&str, function: Box<HttpFunction>) {
-    as_guard().as_mut().unwrap()
-        .set_handler(method, path, function);
+pub fn route(method:Method, endpoint:&str, function: Box<HttpFunction>)
+{
+    http_as_guard()
+        .as_mut().unwrap()
+        .set_handler(method, endpoint, function);
 }
 
-pub fn filter(phase:Phase, pattern:&str, function: Box<HttpFunction>) {
+pub fn filter(phase:Phase, pattern:&str, function: Box<HttpFunction>)
+{
     match phase {
-        Phase::PreHandle => as_guard().as_mut().unwrap().set_pre_handler(pattern, function),
-        Phase::PostHandle => as_guard().as_mut().unwrap().set_post_handler(pattern, function),
-    }
+        Phase::PreHandle => http_as_guard()
+            .as_mut().unwrap()
+            .set_pre_handler(pattern, function),
+        Phase::PostHandle => http_as_guard()
+            .as_mut().unwrap()
+            .set_post_handler(pattern, function),
+    };
 }
 
-pub fn extract() -> Http {
-    HTTP_MVC.get().unwrap()
+pub fn extract_http_setup() -> Http {
+    HTTP_SETUP.get().unwrap()
         .lock().unwrap()
         .take().unwrap()
 }

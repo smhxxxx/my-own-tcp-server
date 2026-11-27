@@ -159,8 +159,10 @@ impl Smtp
         }
     }
 
-    pub fn set_config(&mut self, config:Arc<ServerConfig>) {
+    pub fn set_config(&mut self, config:Arc<ServerConfig>) -> &mut Self
+    {
         self.config = Some(config);
+        self
     }
 
     fn is_local_recipient(&self, recipient: &str) -> bool
