@@ -39,25 +39,14 @@ pub fn extract_http_setup() -> Http {
 
 #[macro_export]
 macro_rules! handler {
-    // 1. 외부 함수 => 핸들러
-    ($f:expr) => {{
+    // 인라인 블록 => 핸들러
+    ($req:ident, $res:ident, $body:block) => {{
         fn __wrapper<'a>(
-            req: &'a mut HttpRequest,
-            res: &'a mut HttpResponse,
-        ) -> AsyncResult<'a> {
-            Box::pin($f(req, res))
+            $req: &'a mut $crate::applications::async_web::http::HttpRequest,
+            $res: &'a mut $crate::applications::async_web::http::HttpResponse,
+        ) -> $crate::applications::async_web::http::AsyncResult<'a> {
+            Box::pin(async move $body)
         }
-        __wrapper as HttpFunction
-    }};
-
-    // 2. 인라인 바디 => 핸들러
-    ($req:ident, $res:ident, $body:expr) => {{
-        fn __wrapper<'a>(
-            $req: &'a mut HttpRequest,
-            $res: &'a mut HttpResponse,
-        ) -> AsyncResult<'a> {
-            Box::pin(async move { $body })
-        }
-        __wrapper as HttpFunction
+        __wrapper as $crate::applications::async_web::http::HttpFunction
     }};
 }
