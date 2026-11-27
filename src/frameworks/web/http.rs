@@ -39,12 +39,25 @@ pub fn extract_http_setup() -> Http {
 
 #[macro_export]
 macro_rules! handler {
-    // 외부 함수포인터 또는 클로저 => 핸들러
-    ($f:expr) => {
-        Box::new(|req, res| Box::pin($f(req, res)))
-    };
-    // 인라인 함수 => 핸들러
-    ($req:ident, $res:ident, $body:expr) => {
-        Box::new(|$req, $res| Box::pin(async move { $body }))
-    };
+    // 1. 외부 함수 => 핸들러
+    ($f:expr) => {{
+        fn __wrapper<'a>(
+            req: &'a mut HttpRequest,
+            res: &'a mut HttpResponse,
+        ) -> AsyncResult<'a> {
+            Box::pin($f(req, res))
+        }
+        __wrapper as HttpFunction
+    }};
+
+    // 2. 인라인 바디 => 핸들러
+    ($req:ident, $res:ident, $body:expr) => {{
+        fn __wrapper<'a>(
+            $req: &'a mut HttpRequest,
+            $res: &'a mut HttpResponse,
+        ) -> AsyncResult<'a> {
+            Box::pin(async move { $body })
+        }
+        __wrapper as HttpFunction
+    }};
 }
