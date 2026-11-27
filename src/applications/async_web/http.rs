@@ -25,8 +25,7 @@ pub enum Method {
 }
 
 pub type AsyncResult<'a> = Pin<Box<dyn Future<Output = io::Result<usize>> + Send + 'a>>;
-pub type HttpFunction =
-    dyn for<'a> Fn(&'a mut HttpRequest, &'a mut HttpResponse) -> AsyncResult<'a> + Send + Sync;
+pub type HttpFunction = for<'a> fn(&'a mut HttpRequest, &'a mut HttpResponse) -> AsyncResult<'a>;
 
 #[derive(Debug)]
 pub struct HttpRequest {

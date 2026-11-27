@@ -14,11 +14,11 @@ use std::sync::Arc;
 pub struct Handler {
     pub method: Method,
     pub endpoint: String,
-    function: Box<HttpFunction>,
+    function: HttpFunction,
 }
 
 impl Handler {
-    pub fn new(method: Method, endpoint: &str, function: Box<HttpFunction>) -> Self
+    pub fn new(method: Method, endpoint: &str, function: HttpFunction) -> Self
     {
         Self {
             method,
@@ -33,7 +33,7 @@ impl Handler {
         response: &mut HttpResponse,
     ) -> io::Result<usize>
     {
-        let result = (*self.function)(request, response).await;
+        let result = (self.function)(request, response).await;
         match result {
             Ok(n) => Ok(n),
             Err(e) => {
@@ -312,7 +312,7 @@ impl Http {
         true
     }
 
-    pub fn set_handler(&mut self, method: Method, endpoint: &str, function: Box<HttpFunction>)
+    pub fn set_handler(&mut self, method: Method, endpoint: &str, function: HttpFunction)
     -> &mut Self
     {
         self.handlers.insert(
@@ -322,7 +322,7 @@ impl Http {
         self
     }
 
-    pub fn set_pre_handler(&mut self, pattern: &str, function: Box<HttpFunction>)
+    pub fn set_pre_handler(&mut self, pattern: &str, function: HttpFunction)
     -> &mut Self
     {
         self.pre_handlers.insert(
@@ -332,7 +332,7 @@ impl Http {
         self
     }
 
-    pub fn set_post_handler(&mut self, pattern: &str, function: Box<HttpFunction>)
+    pub fn set_post_handler(&mut self, pattern: &str, function: HttpFunction)
     -> &mut Self
     {
         self.post_handlers.insert(

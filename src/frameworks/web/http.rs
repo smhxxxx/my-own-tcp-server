@@ -12,14 +12,14 @@ fn http_as_guard() -> MutexGuard<'static, Option<Http>>
         .lock().unwrap()
 }
 
-pub fn route(method:Method, endpoint:&str, function: Box<HttpFunction>)
+pub fn route(method:Method, endpoint:&str, function: HttpFunction)
 {
     http_as_guard()
         .as_mut().unwrap()
         .set_handler(method, endpoint, function);
 }
 
-pub fn filter(phase:Phase, pattern:&str, function: Box<HttpFunction>)
+pub fn filter(phase:Phase, pattern:&str, function: HttpFunction)
 {
     match phase {
         Phase::PreHandle => http_as_guard()
