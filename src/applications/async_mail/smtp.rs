@@ -159,7 +159,7 @@ impl Smtp
         }
     }
 
-    pub fn set_config(&mut self, config:Arc<ServerConfig>) -> &mut Self
+    pub fn set_config(mut self, config:Arc<ServerConfig>) -> Self
     {
         self.config = Some(config);
         self

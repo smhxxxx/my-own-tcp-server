@@ -55,10 +55,11 @@ pub struct Http {
     pre_handlers: HashMap<String, Handler>,
     post_handlers: HashMap<String, Handler>,
     config: Option<Arc<ServerConfig>>,
-    pub use_tls: bool,
+    use_tls: bool,
 }
 
 impl AsyncProtocol for Http {
+
     fn handle_async_connection(&self, mut stream: AsyncTcpStream)
     -> AsyncConnectionFuture<'_, io::Result<usize>>
     {
@@ -169,9 +170,15 @@ impl Http {
         }
     }
 
-    pub fn set_config(&mut self, config: Arc<ServerConfig>) -> &mut Self
+    pub fn set_config(mut self, config: Arc<ServerConfig>) -> Self
     {
         self.config = Some(config);
+        self
+    }
+
+    pub fn with_tls(mut self, use_tls: bool) -> Self
+    {
+        self.use_tls = use_tls;
         self
     }
 

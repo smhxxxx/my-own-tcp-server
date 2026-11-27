@@ -44,31 +44,31 @@ impl Server {
         }
     }
 
-    pub fn set_port(&mut self, port: u16, protocol: impl AsyncProtocol) -> &mut Self
+    pub fn set_port(mut self, port: u16, protocol: impl AsyncProtocol) -> Self
     {
         self.port_mappings.insert(port, Arc::new(protocol));
         self
     }
 
-    pub fn set_max_nio_threads(&mut self, max_nio_threads: usize) -> &mut Self
+    pub fn set_max_nio_threads(mut self, max_nio_threads: usize) -> Self
     {
         self.max_nio_threads = max_nio_threads;
         self
     }
 
-    pub fn set_max_fio_threads(&mut self, max_fio_threads: usize) -> &mut Self
+    pub fn set_max_fio_threads(mut self, max_fio_threads: usize) ->Self
     {
         self.max_fio_threads = max_fio_threads;
         self
     }
 
-    pub fn set_config(&mut self, config: Arc<ServerConfig>) -> &mut Self
+    pub fn set_config(mut self, config: Arc<ServerConfig>) -> Self
     {
         self.config = Some(config);
         self
     }
 
-    pub fn set_read_timeout(&mut self, read_timeout: Option<Duration>) -> &mut Self
+    pub fn set_read_timeout(mut self, read_timeout: Option<Duration>) -> Self
     {
         self.read_timeout = read_timeout;
         self
